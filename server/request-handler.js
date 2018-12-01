@@ -22,47 +22,38 @@ const defaultCorsHeaders = {
 
 let results = [];
 
-var requestHandler = (request, response) => {
-  console.log('Serving request type ' + request.method + ' for url ' + request.url);
+var requestHandler = (req, res) => {
+  var statusCode = 200;
   let headers = defaultCorsHeaders;
+  let pathName = url.parse(req.url).pathname;
+  console.log('Serving req type ' + req.method + ' for url ' + req.url);
 
-  request.on('error', (err) => {
-    console.error(err);
-    response.statusCode = 400;
-    response.end();
-  });
-  
-  response.on('error', (err) => {
-    console.error(err);
-  });
-  
-  if (request.method === 'GET' && request.url === '/classes/messages') {
+  if (req.method === 'GET' && pathName === '/classes/messages') {
     headers['Content-Type'] = 'application/json';
-    response.writeHead(response.statusCode, headers);
-    response.end(JSON.stringify({results}));
-  } 
-  
-  if (request.method === 'POST' && request.url === '/classes/messages') {
+    res.writeHead(statusCode, headers);
+    res.end(JSON.stringify({results}));
+  } else if (req.method === 'POST' && pathName === '/classes/messages') {
     headers['Content-Type'] = 'application/json';
-    
     let message = [];
-    request.on('data', (chunk) => {
+    
+    req.on('data', (chunk) => {
       message.push(chunk);
     }).on('end', () => {
-      message = Buffer.from(message.join());
+      message = Buffer.concat(message).toString();
       results.push(JSON.parse(message));
-      response.end(JSON.stringify({results}));
     });
-    
-    response.statusCode = 201;
-    response.writeHead(response.statusCode, headers);
-    response.end();
+
+    statusCode = 201;
+    res.writeHead(statusCode, headers);
+    res.end(JSON.stringify({results}));
+  } else {
+    statusCode = 404;
+    res.writeHead(statusCode, headers);
+    res.end();
   }
-  
-  response.statusCode = 404;
-  response.end();
 };
 
 module.exports.requestHandler = requestHandler;
+
 
 

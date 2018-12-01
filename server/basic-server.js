@@ -1,10 +1,5 @@
 /* Import node's http module: */
-const messages = require('./messages.js');
-
-const url = require('url');
-
 var http = require('http');
-
 var handleRequest = require('./request-handler.js').requestHandler;
 
 
