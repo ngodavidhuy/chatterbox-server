@@ -17,40 +17,54 @@ const defaultCorsHeaders = {
   'access-control-allow-origin': '*',
   'access-control-allow-methods': 'GET, POST, PUT, DELETE, OPTIONS',
   'access-control-allow-headers': 'content-type, accept',
-  'access-control-max-age': 10 // Seconds.
+  'access-control-max-age': 5 // Seconds.
 };
 
-let results = [];
+let store = {
+  results: []
+};
 
-var requestHandler = (req, res) => {
-  var statusCode = 200;
+let requestHandler = (req, res) => {
+  let statusCode = 200;
   let headers = defaultCorsHeaders;
   let pathName = url.parse(req.url).pathname;
-  console.log('Serving req type ' + req.method + ' for url ' + req.url);
 
-  if (req.method === 'GET' && pathName === '/classes/messages') {
-    headers['Content-Type'] = 'application/json';
-    res.writeHead(statusCode, headers);
-    res.end(JSON.stringify({results}));
-  } else if (req.method === 'POST' && pathName === '/classes/messages') {
-    headers['Content-Type'] = 'application/json';
-    let message = [];
-    
-    req.on('data', (chunk) => {
-      message.push(chunk);
-    }).on('end', () => {
-      message = Buffer.concat(message).toString();
-      results.push(JSON.parse(message));
-    });
+  console.log('//////////////////////////////////');
+  console.log(req.method);
 
-    statusCode = 201;
-    res.writeHead(statusCode, headers);
-    res.end(JSON.stringify({results}));
+  if (pathName === '/classes/messages') {
+    if (req.method === 'POST') {
+      let message = [];
+      
+      req.on('data', (chunk) => {
+        message.push(chunk);
+      }).on('end', () => {
+        message = Buffer.concat(message).toString();
+        message = JSON.parse(message);
+        message.objectId = store.results.length;
+        store.results.push(message);
+      });
+
+      statusCode = 201;
+      headers['Content-Type'] = 'application/json';
+      res.writeHead(statusCode, headers);
+      res.end(JSON.stringify(store));
+    } else if (req.method === 'GET') {
+      headers['Content-Type'] = 'application/json';
+      res.writeHead(statusCode, headers);
+      res.end(JSON.stringify(store));
+    } else if (req.method === 'OPTIONS') {
+      // headers['Content-Type'] = 'application/json';
+      res.writeHead(statusCode, headers);
+      res.end();
+    }
+ 
   } else {
     statusCode = 404;
     res.writeHead(statusCode, headers);
     res.end();
   }
+
 };
 
 module.exports.requestHandler = requestHandler;
